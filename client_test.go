@@ -33,8 +33,8 @@ func newSession(t *testing.T) (io.ReadWriteCloser, *server) {
 	rs, wc := io.Pipe()
 	rc, ws := io.Pipe()
 
-	rws := &logIO{t, "server", pipe{rs, ws}}
-	rwc := &logIO{t, "client", pipe{rc, wc}}
+	rws := &logIO{t, "server", &pipe{r: rs, w: ws}}
+	rwc := &logIO{t, "client", &pipe{r: rc, w: wc}}
 
 	server := server{
 		T: t,

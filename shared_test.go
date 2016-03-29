@@ -8,23 +8,38 @@ package amqp
 import (
 	"encoding/hex"
 	"io"
+	"sync"
 	"testing"
 )
 
 type pipe struct {
 	r *io.PipeReader
 	w *io.PipeWriter
+
+	m      sync.Mutex
+	closed bool
 }
 
-func (p pipe) Read(b []byte) (int, error) {
+func (p *pipe) Read(b []byte) (int, error) {
 	return p.r.Read(b)
 }
 
-func (p pipe) Write(b []byte) (int, error) {
+func (p *pipe) Write(b []byte) (int, error) {
+	p.m.Lock()
+	defer p.m.Unlock()
+	if p.closed {
+		return 0, io.ErrClosedPipe
+	}
 	return p.w.Write(b)
 }
 
-func (p pipe) Close() error {
+func (p *pipe) Close() error {
+	p.m.Lock()
+	defer p.m.Unlock()
+	if p.closed {
+		return nil
+	}
+	p.closed = true
 	p.r.Close()
 	p.w.Close()
 	return nil
